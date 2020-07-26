@@ -3,7 +3,7 @@ import {previewClient} from '../../lib/sanity'
 export default async function createComment(req, res) {
   const { _id, name, email, comment} = JSON.parse(req.body)
   try {
-    result = await previewClient.create({
+    await previewClient.create({
       _type: 'comment',
       post: {
         _type: 'reference',
