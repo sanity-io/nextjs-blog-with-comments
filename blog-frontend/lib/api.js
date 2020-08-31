@@ -57,7 +57,7 @@ export async function getPostAndMorePosts(slug, preview) {
         `*[_type == "post" && slug.current == $slug] | order(_updatedAt desc) {
         ${postFields}
         body,
-        'comments': *[_type == "comment" && post.comment._ref == ^._id]{_id, name, email, comment, _createdAt}
+        'comments': *[_type == "comment" && post._ref == ^._id]{_id, name, email, comment, _createdAt}
       }`,
         { slug }
       )
