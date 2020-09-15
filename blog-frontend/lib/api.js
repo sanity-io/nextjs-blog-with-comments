@@ -1,8 +1,8 @@
 import client, { previewClient } from './sanity'
 
-const getUniquePosts = (posts) => {
+const getUniquePosts = posts => {
   const slugs = new Set()
-  return posts.filter((post) => {
+  return posts.filter(post => {
     if (slugs.has(post.slug)) {
       return false
     } else {
@@ -23,7 +23,15 @@ const postFields = `
   'author': author->{name, 'picture': image.asset->url},
 `
 
-const getClient = (preview) => (preview ? previewClient : client)
+const getClient = preview => (preview ? previewClient : client)
+
+export async function getPreviewPageById(id) {
+  const data = await getClient(true).fetch(
+    `*[_id match $id] | order(_updatedAt desc)[0]`,
+    { id }
+  )
+  return data
+}
 
 export async function getPreviewPostBySlug(slug) {
   const data = await getClient(true).fetch(
@@ -34,6 +42,12 @@ export async function getPreviewPostBySlug(slug) {
     { slug }
   )
   return data[0]
+}
+
+export async function getAllRoutesWithSlug() {
+  const data = await client.fetch(`*[_type == "route"]{ 'slug': slug.current }`)
+
+  return data
 }
 
 export async function getAllPostsWithSlug() {
@@ -49,6 +63,23 @@ export async function getAllPostsForHome(preview) {
   return getUniquePosts(results)
 }
 
+export async function getPage(slug, preview) {
+  const curClient = getClient(preview)
+  const page = await curClient.fetch(
+    `*[
+      (_type == "route" && slug.current == $slug) ||
+      (_type == "page" && _id == $slug)
+    ]{
+      _type == "route" => {
+        ...@.page->
+      },
+      ...
+    }[0]`, {slug}
+  )
+  console.log(page)
+  return { page }
+}
+
 export async function getPostAndMorePosts(slug, preview) {
   const curClient = getClient(preview)
   const [post, morePosts] = await Promise.all([
@@ -61,14 +92,14 @@ export async function getPostAndMorePosts(slug, preview) {
       }`,
         { slug }
       )
-      .then((res) => res?.[0]),
+      .then(res => res?.[0]),
     curClient.fetch(
       `*[_type == "post" && slug.current != $slug] | order(publishedAt desc, _updatedAt desc){
         ${postFields}
         body,
       }[0...2]`,
       { slug }
-    ),
+    )
   ])
   return { post, morePosts: getUniquePosts(morePosts) }
 }
